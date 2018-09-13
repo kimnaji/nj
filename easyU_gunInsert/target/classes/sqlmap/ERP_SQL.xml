@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="erp">
+	<insert id="insertstaff" parameterType="StaffDTO" >
+	
+	insert into staff
+	 values (staff_seq.nextval, #{staff_name}, #{jumin_no}, #{school_code}, #{religion_code}, #{graduate_day}) 
+	</insert>
+	
+	<select id="staffView" resultType="StaffDTO" parameterType="int">
+		SELECT *
+		FROM staff s
+		inner join staff_skill k on s.staff_no=k.staff_no 
+		where s.staff_no=#{staff_no}
+	</select>
+	
+	<select id="staffList" resultType="StaffDTO" parameterType="StaffDTO" >
+	
+			select * 
+		from (
+			select a.*, ROWNUM as RNUM
+			from (
+				select *
+					from staff s
+						inner join code_religion r on s.religion_code = r.religion_code
+						)a
+			where<![CDATA[ ROWNUM <= #{endRow}	]]>)
+		where <![CDATA[RNUM >= #{startRow}	]]>
+	
+		
+	</select>  
+	
+<!-- <select id="staffList" resultType="StaffDTO" parameterType="StaffDTO">
+   select a.* from ( select ROWNUM as RNUM, b.* from ( SELECT *
+      FROM staff s 
+      inner join code_religion r on s.religion_code=r.religion_code ) b ) a where a.RNUM <![CDATA[>=]]>
+      #{startRow} and a.RNUM <![CDATA[<=]]>
+      #{endRow}
+   </select>  -->
+	
+	<select id="staff_listcount" resultType="int"  >
+	
+		Select count(staff_no) from staff
+	
+	</select>
+	
+	
+	<delete id="staffDel">
+		DELETE 
+		FROM staff
+		WHERE staff_no=#{staff_no}
+	</delete>
+	
+	<delete id="staffskilldel">
+		DELETE
+		FROM staff_skill
+		WHERE staff_no=#{staff_no}
+	</delete>
+	
+		<delete id="keywordskill">
+		DELETE
+		FROM keyword_skill
+		WHERE staff_no=#{staff_no}
+	</delete>
+	
+	
+
+	<select id="staffSearch" resultType="StaffDTO" parameterType="StaffDTO">
+		
+	
+
+	<if test="keyword_no==1">
+		
+		select * 
+		from staff s
+		inner join code_religion r on s.religion_code = r.religion_code where staff_no in (
+		SELECT  s.staff_no
+		FROM staff s 
+		inner join staff_skill k ON s.staff_no = k.staff_no 
+		inner join code_religion r on s.religion_code = r.religion_code
+		inner join keyword_skill w on s.staff_no = w.staff_no
+		WHERE (s.staff_name like '%'||#{staff_name}||'%' and s.religion_code=#{religion_code} 
+		and s.graduate_day between #{graduate_ch1} and #{graduate_ch2} and substr(s.jumin_no,7,1) = #{sex})
+		and  (s.school_code=#{school_code} 
+		or k.skill_code=#{skill_code} and w.keyword like '%'||#{keyword}||'%'	)
+		group by s.staff_no)
+	</if>
+	
+	<if test="keyword_no==2">
+		select * 
+		from staff s
+		inner join code_religion r on s.religion_code = r.religion_code where staff_no in (
+		SELECT  s.staff_no
+		FROM staff s 
+		inner join staff_skill k ON s.staff_no = k.staff_no 
+		inner join code_religion r on s.religion_code = r.religion_code
+		inner join keyword_skill w on s.staff_no = w.staff_no
+		where (s.staff_name like '%'||#{staff_name}||'%' and s.religion_code=#{religion_code} 
+		and s.graduate_day between #{graduate_ch1} and #{graduate_ch2} and substr(s.jumin_no,7,1) = #{sex})
+		and ( s.school_code=#{school_code}  
+		or k.skill_code=#{skill_code} or w.keyword like '%'||#{keyword}||'%')
+		group by s.staff_no
+		
+		)
+		</if>
+	
+	</select>
+	
+	<insert id="insertSkill" parameterType="int">
+		INSERT INTO STAFF_SKILL VALUES(staff_skill_seq.nextval, staff_seq.currval,#{skill_code})
+	
+	</insert>
+	
+	
+	<insert id="insertkeyword" parameterType="StaffDTO">
+		INSERT INTO keyword_skill VALUES(keyword_skill_seq.nextval, staff_seq.currval,#{keyword})
+	
+	</insert>
+	
+	<select id="religion" resultType="String">
+		SELECT	skill_name
+		FROM code_skill
+		where religion_code=#{religion_code}
+		
+	</select>
+	
+	<update id="staffUpdate" parameterType="StaffDTO">
+		UPDATE staff
+		SET staff_name=#{staff_name}, jumin_no=#{jumin_no}, school_code=#{school_code}, religion_code=#{religion_code}, graduate_day=#{graduate_day}
+		WHERE staff_no=#{staff_no}
+	</update>
+	
+	<update id="updateSkill" parameterType="StaffDTO">
+		UPDATE staff_skill 
+		SET skill_code=#{skill_code}
+		WHERE staff_no=#{staff_no}
+	</update>
+	
+	<select id="sort_No" parameterType="StaffDTO" resultType="staffDTO">
+	
+		
+		SELECT *
+		FROM staff s 
+		inner join code_religion r on s.religion_code=r.religion_code 
+		<trim prefix="ORDER BY">
+			<if test="sort_type=='staff_no'">staff_no</if>
+			<if test="sort_type=='staff_name'">staff_name</if>
+			<if test="sort_type=='graduate_day'">graduate_day</if>
+		</trim>
+		<if test="sort==1">
+		 asc
+		</if>
+		<if test="sort==2">
+		 desc
+		</if>
+	
+	</select>
+</mapper>
